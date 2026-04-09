@@ -297,6 +297,7 @@ components.html(
 
             <div class="actions">
                 <button id="bulkKillBtn" disabled>10마리 연속 처치 (31마리부터)</button>
+                <button id="megaKillBtn" disabled>100마리 연속 처치 (201마리부터)</button>
                 <button id="resetBtn">초기화</button>
             </div>
 
@@ -344,6 +345,7 @@ components.html(
             const killCounter = document.getElementById("killCounter");
             const dropMsg = document.getElementById("dropMsg");
             const bulkKillBtn = document.getElementById("bulkKillBtn");
+            const megaKillBtn = document.getElementById("megaKillBtn");
             const resetBtn = document.getElementById("resetBtn");
             const legendaryStat = document.getElementById("legendaryStat");
             const rareStat = document.getElementById("rareStat");
@@ -386,6 +388,7 @@ components.html(
                 rareStat.textContent = formatStat(state.rare);
                 commonStat.textContent = formatStat(state.common);
                 bulkKillBtn.disabled = state.kills <= 30 || state.locked;
+                megaKillBtn.disabled = state.kills <= 200 || state.locked;
                 monsterBtn.disabled = state.locked;
                 resetBtn.disabled = state.locked;
             }
@@ -440,6 +443,35 @@ components.html(
                 state[item] += 1;
             }
 
+            function performBatchKill(count) {
+                state.locked = true;
+                updateUI();
+
+                arena.classList.remove("hit", "dead");
+                void arena.offsetWidth;
+                arena.classList.add("hit");
+
+                const batch = { legendary: 0, rare: 0, common: 0 };
+                for (let i = 0; i < count; i += 1) {
+                    const dropped = rollDrop();
+                    addDrop(dropped);
+                    batch[dropped] += 1;
+                }
+
+                dropMsg.textContent = `⚔️ ${count}마리 처치 완료! 전설 ${batch.legendary} · 희귀 ${batch.rare} · 일반 ${batch.common}`;
+                updateUI();
+
+                setTimeout(() => {
+                    arena.classList.add("dead");
+                }, 100);
+
+                setTimeout(() => {
+                    arena.classList.remove("hit", "dead");
+                    state.locked = false;
+                    updateUI();
+                }, 560);
+            }
+
             function resetAll() {
                 state.kills = 0;
                 state.legendary = 0;
@@ -475,32 +507,12 @@ components.html(
 
             bulkKillBtn.addEventListener("click", () => {
                 if (state.locked || state.kills <= 30) return;
-                state.locked = true;
-                updateUI();
+                performBatchKill(10);
+            });
 
-                arena.classList.remove("hit", "dead");
-                void arena.offsetWidth;
-                arena.classList.add("hit");
-
-                const batch = { legendary: 0, rare: 0, common: 0 };
-                for (let i = 0; i < 10; i += 1) {
-                    const dropped = rollDrop();
-                    addDrop(dropped);
-                    batch[dropped] += 1;
-                }
-
-                dropMsg.textContent = `⚔️ 10마리 처치 완료! 전설 ${batch.legendary} · 희귀 ${batch.rare} · 일반 ${batch.common}`;
-                updateUI();
-
-                setTimeout(() => {
-                    arena.classList.add("dead");
-                }, 100);
-
-                setTimeout(() => {
-                    arena.classList.remove("hit", "dead");
-                    state.locked = false;
-                    updateUI();
-                }, 560);
+            megaKillBtn.addEventListener("click", () => {
+                if (state.locked || state.kills <= 200) return;
+                performBatchKill(100);
             });
 
             resetBtn.addEventListener("click", () => {
